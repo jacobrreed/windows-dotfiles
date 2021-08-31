@@ -1,0 +1,1 @@
+choco install -y steam-client nvidia-display-driver streamlabs-obs epicgameslauncher vscode virtualbox microsoft-windows-terminal streamdeck icue googlechrome sharex python golang spotify 7zip nvm powertoys vlc
