@@ -1,0 +1,18 @@
+{
+	"all": {
+		"cachedState": {
+			"date": "2022-03-28T23:33:26.971Z",
+			"value": false
+		},
+		"general": {
+			"showButton": true,
+			"showItem": false,
+			"playEnable": false,
+			"playDisable": false
+		},
+		"selections": {
+			"enableSound": "stream_started",
+			"disableSound": "stream_ended"
+		}
+	}
+}

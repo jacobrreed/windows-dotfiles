@@ -1,0 +1,1 @@
+Goes in C:\Program Files (x86)\RivaTuner Statistics Server

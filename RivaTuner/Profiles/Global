@@ -19,11 +19,13 @@ EnableFrametimeHistory=0
 FrametimeHistoryWidth=-32
 FrametimeHistoryHeight=-4
 FrametimeHistoryStyle=0
+FrameColorBarMode=0
 [Statistics]
 FramerateAveragingInterval=1000
 PeakFramerateCalc=0
 PercentileCalc=0
 FrametimeCalc=0
+PercentileBuffer=0
 [Framerate]
 Limit=0
 LimitDenominator=1
@@ -33,6 +35,7 @@ SyncScanline0=0
 SyncScanline1=0
 SyncPeriods=0
 SyncLimiter=0
+PassiveWait=1
 [Hooking]
 EnableHooking=1
 EnableFloatingInjectionAddress=0
@@ -47,6 +50,7 @@ HookDirect3D12=1
 HookOpenGL=1
 HookVulkan=1
 InjectionDelay=15000
+UseDetours=0
 [Font]
 Height=-11
 Weight=700
@@ -67,4 +71,4 @@ Implementation=2
 [RendererVulkan]
 Implementation=2
 [Info]
-Timestamp=03-11-2021, 13:43:12
+Timestamp=24-06-2022, 20:39:45

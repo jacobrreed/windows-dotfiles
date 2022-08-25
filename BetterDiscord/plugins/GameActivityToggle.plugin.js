@@ -2,7 +2,7 @@
  * @name GameActivityToggle
  * @author DevilBro
  * @authorId 278543574059057154
- * @version 1.0.4
+ * @version 1.1.4
  * @description Adds a Quick-Toggle Game Activity Button
  * @invite Jx3TjNS
  * @donate https://www.paypal.me/MircoWittrien
@@ -17,25 +17,12 @@ module.exports = (_ => {
 		"info": {
 			"name": "GameActivityToggle",
 			"author": "DevilBro",
-			"version": "1.0.4",
+			"version": "1.1.4",
 			"description": "Adds a Quick-Toggle Game Activity Button"
-		},
-		"changeLog": {
-			"improved": {
-				"Cached State": "Now saves the state of your activity status, to avoid the activity status being turned off on each start of discord, this is an issue with Discord btw and not the plugin"
-			}
 		}
 	};
 	
-	return (window.Lightcord && !Node.prototype.isPrototypeOf(window.Lightcord) || window.LightCord && !Node.prototype.isPrototypeOf(window.LightCord) || window.Astra && !Node.prototype.isPrototypeOf(window.Astra)) ? class {
-		getName () {return config.info.name;}
-		getAuthor () {return config.info.author;}
-		getVersion () {return config.info.version;}
-		getDescription () {return "Do not use LightCord!";}
-		load () {BdApi.alert("Attention!", "By using LightCord you are risking your Discord Account, due to using a 3rd Party Client. Switch to an official Discord Client (https://discord.com/) with the proper BD Injection (https://betterdiscord.app/)");}
-		start() {}
-		stop() {}
-	} : !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
+	return !window.BDFDB_Global || (!window.BDFDB_Global.loaded && !window.BDFDB_Global.started) ? class {
 		getName () {return config.info.name;}
 		getAuthor () {return config.info.author;}
 		getVersion () {return config.info.version;}
@@ -81,24 +68,23 @@ module.exports = (_ => {
 				toggleButton = this;
 			}
 			render() {
+				const enabled = this.props.forceState != undefined ? this.props.forceState : BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame.getSetting();
+				delete this.props.forceState;
 				return BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.PanelButton, Object.assign({}, this.props, {
-					tooltipText: BDFDB.LibraryModules.SettingsStore.showCurrentGame ? _this.labels.disable_activity : _this.labels.enable_activity,
+					tooltipText: enabled ? _this.labels.disable_activity : _this.labels.enable_activity,
 					icon: iconProps => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SvgIcon, Object.assign({}, iconProps, {
 						nativeClass: true,
 						width: 20,
 						height: 20,
 						foreground: BDFDB.disCN.accountinfobuttonstrikethrough,
-						name: BDFDB.LibraryModules.SettingsStore.showCurrentGame ? BDFDB.LibraryComponents.SvgIcon.Names.GAMEPAD : BDFDB.LibraryComponents.SvgIcon.Names.GAMEPAD_DISABLED
+						name: enabled ? BDFDB.LibraryComponents.SvgIcon.Names.GAMEPAD : BDFDB.LibraryComponents.SvgIcon.Names.GAMEPAD_DISABLED
 					})),
-					onClick: _ => {
-						_this.settings.general[!BDFDB.LibraryModules.SettingsStore.showCurrentGame ? "playEnable" : "playDisable"] && BDFDB.LibraryModules.SoundUtils.playSound(_this.settings.selections[!BDFDB.LibraryModules.SettingsStore.showCurrentGame ? "enableSound" : "disableSound"], .4);
-						BDFDB.LibraryModules.SettingsUtils.updateRemoteSettings({showCurrentGame: !BDFDB.LibraryModules.SettingsStore.showCurrentGame});
-					}
+					onClick: _ => _this.toggle()
 				}));
 			}
 		};
 		
-		var sounds = [];
+		var sounds = [], keybind;
 		
 		return class GameActivityToggle extends Plugin {
 			onLoad () {
@@ -108,6 +94,8 @@ module.exports = (_ => {
 				
 				this.defaults = {
 					general: {
+						showButton:			{value: true,					description: "Show Quick Toggle Button"},
+						showItem:			{value: false,					description: "Show Quick Toggle Item"},
 						playEnable:			{value: true,					description: "Play Enable Sound"},
 						playDisable:		{value: true,					description: "Play Disable Sound"}
 					},
@@ -118,25 +106,41 @@ module.exports = (_ => {
 				};
 				
 				this.patchedModules = {
+					before: {
+						Menu: "default"
+					},
 					after: {
 						Account: "render"
 					}
 				};
+				
+				this.css = `
+					${BDFDB.dotCNS._gameactivitytoggleadded + BDFDB.dotCNC.accountinfowithtagasbutton + BDFDB.dotCNS._gameactivitytoggleadded + BDFDB.dotCN.accountinfowithtagless} {
+						flex: 1;
+						min-width: 0;
+					}
+				`;
 			}
 			
 			onStart () {
 				let cachedState = BDFDB.DataUtils.load(this, "cachedState");
+				let state = BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame.getSetting();
 				if (!cachedState.date || (new Date() - cachedState.date) > 1000*60*60*24*3) {
-					cachedState.value = BDFDB.LibraryModules.SettingsStore.showCurrentGame;
+					cachedState.value = state;
 					cachedState.date = new Date();
 					BDFDB.DataUtils.save(cachedState, this, "cachedState");
 				}
-				else if (cachedState.value != null && cachedState.value != BDFDB.LibraryModules.SettingsStore.showCurrentGame) BDFDB.LibraryModules.SettingsUtils.updateRemoteSettings({showCurrentGame: cachedState.value});
+				else if (cachedState.value != null && cachedState.value != state) BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame.updateSetting(cachedState.value);
 				
-				BDFDB.PatchUtils.patch(this, BDFDB.LibraryModules.SettingsUtils, "updateLocalSettings", {after: e => {
+				if (BDFDB.LibraryModules.SettingsUtils) BDFDB.PatchUtils.patch(this, BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame, "updateSetting", {after: e => {
+					if (toggleButton) toggleButton.props.forceState = e.methodArguments[0];
 					BDFDB.ReactUtils.forceUpdate(toggleButton);
-					BDFDB.DataUtils.save({date: new Date(), value: BDFDB.LibraryModules.SettingsStore.showCurrentGame}, this, "cachedState");
+					BDFDB.DataUtils.save({date: new Date(), value: e.methodArguments[0]}, this, "cachedState");
 				}});
+				
+				keybind = BDFDB.DataUtils.load(this, "keybind");
+				keybind = BDFDB.ArrayUtils.is(keybind) ? keybind : [];
+				this.activateKeybind();
 				
 				BDFDB.PatchUtils.forceAllUpdates(this);
 			}
@@ -171,17 +175,76 @@ module.exports = (_ => {
 							onChange: value => BDFDB.LibraryModules.SoundUtils.playSound(value, 0.4)
 						}));
 						
+						settingsItems.push(BDFDB.ReactUtils.createElement("div", {
+							className: BDFDB.disCN.settingsrowcontainer,
+							children: BDFDB.ReactUtils.createElement("div", {
+								className: BDFDB.disCN.settingsrowlabel,
+								children: [
+									BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.SettingsLabel, {
+										label: "Global Hotkey"
+									}),
+									BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.Flex.Child, {
+										className: BDFDB.disCNS.settingsrowcontrol + BDFDB.disCN.flexchild,
+										grow: 0,
+										wrap: true,
+										children: BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.KeybindRecorder, {
+											value: !keybind ? [] : keybind,
+											reset: true,
+											onChange: value => {
+												keybind = value;
+												BDFDB.DataUtils.save(keybind, this, "keybind")
+												this.activateKeybind();
+											}
+										})
+									})
+								].flat(10).filter(n => n)
+							})
+						}));
+						
 						return settingsItems;
 					}
 				});
 			}
 			
+			processMenu (e) {
+				if (!this.settings.general.showItem || e.instance.props.navId != "account") return;
+				let [_, oldIndex] = BDFDB.ContextMenuUtils.findItem(e.instance, {id: BDFDB.ContextMenuUtils.createItemId(this.name, "activity-toggle")});
+				if (oldIndex == -1) {
+					let [children, index] = BDFDB.ContextMenuUtils.findItem(e.instance, {id: ["custom-status", "set-custom-status", "edit-custom-status"]});
+					if (index > -1) {
+						let isChecked = BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame.getSetting();
+						children.push(BDFDB.ContextMenuUtils.createItem(BDFDB.LibraryComponents.MenuItems.MenuCheckboxItem, {
+							label: BDFDB.LanguageUtils.LanguageStrings.ACTIVITY_STATUS,
+							id: BDFDB.ContextMenuUtils.createItemId(this.name, "activity-toggle"),
+							icon: _ => BDFDB.ReactUtils.createElement(BDFDB.LibraryComponents.MenuItems.MenuIcon, {
+								icon: BDFDB.LibraryComponents.SvgIcon.Names.GAMEPAD
+							}),
+							showIconFirst: true,
+							checked: isChecked,
+							action: _ => this.toggle()
+						}));
+					}
+				}
+			}
+			
 			processAccount (e) {
+				if (!this.settings.general.showButton) return;
 				let [children, index] = BDFDB.ReactUtils.findParent(e.returnvalue, {name: "PanelButton"});
 				if (index > -1) {
 					e.returnvalue.props.className = BDFDB.DOMUtils.formatClassName(e.returnvalue.props.className, BDFDB.disCN._gameactivitytoggleadded);
 					children.unshift(BDFDB.ReactUtils.createElement(ActivityToggleComponent, {}));
 				}
+			}
+			
+			activateKeybind () {
+				if (keybind && keybind.length) BDFDB.ListenerUtils.addGlobal(this, "GAMEACTIVITY_TOGGLE", keybind, this.toggle);
+				else BDFDB.ListenerUtils.removeGlobal(this, "GAMEACTIVITY_TOGGLE", keybind, this.toggle);
+			}
+			
+			toggle () {
+				const shouldEnable = !BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame.getSetting();
+				_this.settings.general[shouldEnable ? "playEnable" : "playDisable"] && BDFDB.LibraryModules.SoundUtils.playSound(_this.settings.selections[shouldEnable ? "enableSound" : "disableSound"], .4);
+				BDFDB.LibraryModules.SettingsUtils.ShowCurrentGame.updateSetting(shouldEnable);
 			}
 
 			setLabelsByLanguage () {

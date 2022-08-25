@@ -1,6 +1,5 @@
-# Windows Fresh Install Packages
- - Chocolately script to install most packages
- - iCue profile
+# Windows Fresh Install Packages not covered by choco
  - [Nvidia Broadcast](https://www.nvidia.com/en-us/geforce/broadcasting/broadcast-app/)
- - [ExitLag](https://www.exitlag.com/en/download)
- - [BetterDiscord](https://betterdiscord.app/)
+ - [Curseforge standalone](https://curseforge.overwolf.com/downloads/curseforge-latest-win64.exe)
+ - [HueSync](https://www.philips-hue.com/en-us/explore-hue/propositions/entertainment/sync-with-pc)
+ - [SquadOV](https://www.squadov.gg/)
